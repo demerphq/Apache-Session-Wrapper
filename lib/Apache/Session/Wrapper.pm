@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.16';
+$VERSION = '0.17';
 
 use base qw(Class::Container);
 
@@ -377,6 +377,10 @@ sub _check_sets
         }
 
         my @missing = grep { ! exists $self->{$_} } @$set;
+
+        # At least one set has been checked if we got this far, and
+        # that's enough.
+        last unless @missing;
 
         param_error "Some of the required parameters for your chosen $type class ($class) were missing: @missing."
             if @missing;

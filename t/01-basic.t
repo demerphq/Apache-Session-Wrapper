@@ -5,7 +5,7 @@ use strict;
 use File::Path;
 use File::Spec;
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 
 use_ok('Apache::Session::Wrapper');
 
@@ -124,15 +124,27 @@ untie %session;
 
 rmtree( $params{directory} );
 
-Test::More::diag( "\nIgnore the warning from Apache::Session::MySQL ..." );
+{
+    Test::More::diag( "\nIgnore the warnings about MySQL ..." );
 
-eval { Apache::Session::Wrapper->new( class => 'Flex',
-                                      store     => 'MySQL',
-                                      lock      => 'Null',
-                                      generate  => 'MD5',
-                                      serialize => 'Storable',
-                                      data_source => 'foo',
-                                      user_name   => 'foo',
-                                      password    => 'foo',
-                                    ) };
-unlike( $@, qr/parameters/ );
+    eval { Apache::Session::Wrapper->new( class     => 'Flex',
+                                          store     => 'MySQL',
+                                          lock      => 'Null',
+                                          generate  => 'MD5',
+                                          serialize => 'Storable',
+                                          data_source => 'foo',
+                                          user_name   => 'foo',
+                                          password    => 'foo',
+                                        ) };
+    unlike( $@, qr/parameters/ );
+}
+
+{
+    eval { Apache::Session::Wrapper->new( class       => 'Postgres',
+                                          data_source => 'foo',
+                                          user_name   => 'foo',
+                                          password    => 'foo',
+                                          commit      => 0,
+                                        ) };
+    unlike( $@, qr/parameters/ );
+}

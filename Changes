@@ -1,3 +1,10 @@
+0.17   2004-04-23
+
+- Fix a bug in checking parameters which could occur when the "commit"
+parameter for Postgres, Oracle, or Sybcase was passed.  This caused a
+fatal error when creating the wrapper object.  Patch by Max Baker.
+
+
 0.16   2004-04-08
 
 - No code changes, just include Class::Container in the dependencies.
