@@ -10,7 +10,11 @@ use Test::More tests => 12;
 use_ok('Apache::Session::Wrapper');
 
 my %params =
-    ( class  => 'File',
+    ( class     => 'Flex',
+      store     => 'File',
+      lock      => 'Null',
+      generate  => 'MD5',
+      serialize => 'Storable',
     );
 
 foreach ( [ directory => 'Apache-Session-Wrapper-sessions-test' ],

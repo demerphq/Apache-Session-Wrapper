@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.12';
+$VERSION = '0.13';
 
 use base qw(Class::Container);
 
@@ -36,13 +36,13 @@ my %params =
 
       param_name =>
       { type => SCALAR,
-	default => undef,
+        optional => 1,
         depends => 'param_object',
 	descr => 'Name of the parameter to use for session tracking' },
 
       param_object =>
       { type => OBJECT,
-	default => undef,
+        optional => 1,
         can  => 'param',
 	descr => 'Object which has a "param" method, to be used for getting the session id from a query string or POST argument' },
 
@@ -63,7 +63,7 @@ my %params =
 
       cookie_domain =>
       { type => UNDEF | SCALAR,
-	default => undef,
+        optional => 1,
 	descr => 'Domain parameter for cookies' },
 
       cookie_path =>
@@ -86,7 +86,7 @@ my %params =
         callbacks =>
         { 'header method' =>
           sub { $_[0]->can('err_header_out') || $_[0]->can('header_out' ) } },
-        default => undef,
+        optional => 1,
         descr => 'An object that can be used to send cookies with' },
 
       class =>
@@ -100,12 +100,12 @@ my %params =
 
       user_name =>
       { type => UNDEF | SCALAR,
-	default => undef,
+        optional => 1,
 	descr => 'The user name to be used when connecting to a database' },
 
       password =>
       { type => UNDEF | SCALAR,
-	default => undef,
+	optional => 1,
 	descr => 'The password to be used when connecting to a database' },
 
       table_name =>
@@ -120,12 +120,12 @@ my %params =
 
       lock_user_name =>
       { type => UNDEF | SCALAR,
-        default => undef,
+        optional => 1,
 	descr => 'The user name to be used when connecting to a database' },
 
       lock_password =>
       { type => UNDEF | SCALAR,
-	default => undef,
+	optional => 1,
 	descr => 'The password to be used when connecting to a database' },
 
       handle =>
@@ -150,12 +150,12 @@ my %params =
 
       directory =>
       { type => SCALAR,
-	default => undef,
+	optional => 1,
 	descr => 'A directory to use when storing sessions' },
 
       lock_directory =>
       { type => SCALAR,
-	default => undef,
+	optional => 1,
 	descr => 'A directory to use for locking when storing sessions' },
 
       file_name =>
@@ -338,10 +338,10 @@ sub _check_session_params
     my $sets = $ApacheSessionParams{ $self->{session_class_piece} }
 	or param_error "Invalid session class: $self->{class}";
 
-    my $complete = $self->_check_sets($sets);
+    my @missing = $self->_check_sets($sets);
 
-    param_error "Not all of the required parameters for your chosen session class ($self->{class}) were provided."
-	unless $complete;
+    param_error "Not all of the required parameters for your chosen session class ($self->{class}) were provided.  Missing the following: @missing."
+	if @missing;
 
     if ( $self->{session_class_piece} eq 'Flex' )
     {
@@ -351,10 +351,10 @@ sub _check_session_params
 	    my $sets = $ApacheSessionFlexParams{$key}{$subclass}
 		or param_error "Invalid class for $key: $self->{$key}";
 
-	    my $complete = $self->_check_sets($sets);
+            my @missing = $self->_check_sets($sets);
 
-	    param_error "Not all of the required parameters for your chosen $key class ($subclass) were provided."
-		unless $complete;
+            param_error "Not all of the required parameters for your chosen $key class ($subclass) were provided.  Missing the following: @missing."
+                if @missing;
 	}
     }
 }
@@ -366,11 +366,12 @@ sub _check_sets
 
     foreach my $set (@$sets)
     {
-	return 1
-	    if ( grep { exists $self->{"$_"} } @$set ) == @$set;
+        my @missing = grep { ! exists $self->{"$_"} } @$set;
+
+        return @missing if @missing;
     }
 
-    return 0;
+    return;
 }
 
 sub _set_session_params
@@ -570,6 +571,8 @@ sub _bake_cookie
 
     my $expires = shift || $self->{cookie_expires};
 
+    $expires = undef if defined $expires && $expires =~ /^session$/i;
+
     my $domain = $self->{cookie_domain};
 
     my $cookie =
@@ -766,8 +769,8 @@ This defaults to true.
 
 =item * use_cookie  =>  boolean
 
-If true, then this module will use C<Apache::Cookie> to set and read
-cookies that contain the session id.
+If true, then this module will use C<Apache::Cookie> or C<CGI::Cookie>
+(as appropriate) to set and read cookies that contain the session id.
 
 The cookie will be set again every time the client accesses a Mason
 component unless the C<cookie_resend> parameter is false.
@@ -782,6 +785,10 @@ Corresponds to the C<Apache::Cookie> "-name" constructor parameter.
 
 How long before the cookie expires.  This defaults to 1 day, "+1d".
 Corresponds to the "-expires" parameter.
+
+As a special case, you can set this value to "session" to have the
+"-expires" parameter set to undef, which gives you a cookie that
+expires at the end of the session.
 
 =item * cookie_domain  =>  domain
 
@@ -1001,7 +1008,7 @@ Please submit bugs to the CPAN RT system at
 http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Apache%3A%3ASession%3A%3AWrapper
 or via email at bug-apache-session-wrapper@rt.cpan.org.
 
-Support questions can be sent to me at my email address, listed below.
+Support questions can be sent to me at my email address, shown below.
 
 =head1 AUTHOR
 

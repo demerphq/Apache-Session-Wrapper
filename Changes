@@ -1,3 +1,13 @@
+0.13   2004-03-19
+
+- Allow the cookie expiration to be set to "session", which is
+equivalent to undef, and causes the cookie to expire when the browser
+is closed.
+
+- Remove some incorrect default values for some parameters, which were
+being set to undef when they shouldn't be.
+
+
 0.12   2004-02-26
 
 - Document that constructor can throw an exception.
