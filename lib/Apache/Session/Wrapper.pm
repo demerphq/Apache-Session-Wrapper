@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.1';
+$VERSION = '0.11';
 
 use base qw(Class::Container);
 
@@ -53,7 +53,7 @@ my %params =
 
       cookie_name =>
       { type => SCALAR,
-	default => 'MasonX-Request-WithApacheSession-cookie',
+	default => 'Apache-Session-Wrapper-cookie',
 	descr => 'Name of cookie used by this module' },
 
       cookie_expires =>
@@ -768,7 +768,7 @@ component unless the C<cookie_resend> parameter is false.
 =item * cookie_name  =>  name
 
 This is the name of the cookie that this module will set.  This
-defaults to "MasonX-Request-WithApacheSession-cookie".
+defaults to "Apache-Session-Wrapper-cookie".
 Corresponds to the C<Apache::Cookie> "-name" constructor parameter.
 
 =item * cookie_expires  =>  expiration
@@ -972,6 +972,17 @@ C<CGI::Cookie> as a fallback.
 If it ends up using C<CGI::Cookie> then must provide a "header_object"
 parameter.  The module calls C<err_header_out()> or C<header_out()> on
 the provided object, using the former if it's available.
+
+=head1 SUBCLASSING
+
+This class provides a simply hook for subclasses.  Before trying to
+get a session id from the URL or cookie, it calls a method named
+C<_get_session_id()>.  In this class, that method is a no-op, but you
+can override this in a subclass.
+
+This class is a C<Class::Container> subclass, so if you accept
+additional constructor parameters, you should declare them via the
+C<valid_params()> method.
 
 =head1 SUPPORT
 
