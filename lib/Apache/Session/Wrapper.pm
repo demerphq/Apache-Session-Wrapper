@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.17';
+$VERSION = '0.19';
 
 use base qw(Class::Container);
 
@@ -22,6 +22,8 @@ use Params::Validate 0.70;
 use Params::Validate qw( validate SCALAR UNDEF BOOLEAN OBJECT );
 Params::Validate::validation_options( on_fail => sub { param_error( join '', @_ ) } );
 
+
+my @HeaderMethods = qw( err_header_out  err_headers_out header_out headers_out );
 
 my %params =
     ( always_write =>
@@ -84,8 +86,8 @@ my %params =
       header_object =>
       { type => OBJECT,
         callbacks =>
-        { 'header method' =>
-          sub { $_[0]->can('err_header_out') || $_[0]->can('header_out' ) } },
+        { 'has a method to set headers' =>
+          sub { grep { $_[0]->can($_) } @HeaderMethods } },
         optional => 1,
         descr => 'An object that can be used to send cookies with' },
 
@@ -105,7 +107,7 @@ my %params =
 
       password =>
       { type => UNDEF | SCALAR,
-	optional => 1,
+	default => undef,
 	descr => 'The password to be used when connecting to a database' },
 
       table_name =>
@@ -125,7 +127,7 @@ my %params =
 
       lock_password =>
       { type => UNDEF | SCALAR,
-	optional => 1,
+	default => undef,
 	descr => 'The password to be used when connecting to a database' },
 
       handle =>
@@ -219,10 +221,10 @@ my %params =
 # Multiple array refs represent multiple possible sets of parameters
 my %ApacheSessionParams =
     ( Flex     => [ [ qw( store lock generate serialize ) ] ],
-      MySQL    => [ [ qw( data_source user_name password
-                          lock_data_source lock_user_name lock_password ) ],
+      MySQL    => [ [ qw( data_source user_name
+                          lock_data_source lock_user_name ) ],
 		    [ qw( handle lock_handle ) ] ],
-      Postgres => [ [ qw( data_source user_name password commit ) ],
+      Postgres => [ [ qw( data_source user_name commit ) ],
 		    [ qw( handle commit ) ] ],
       File     => [ [ qw( directory lock_directory ) ] ],
       DB_File  => [ [ qw( file_name lock_directory ) ] ],
@@ -234,23 +236,23 @@ my %ApacheSessionParams =
     ( $ApacheSessionParams{Postgres} ) x 3;
 
 my %OptionalApacheSessionParams =
-    ( MySQL    => [ [ qw( table_name ) ] ],
-      Postgres => [ [ qw( table_name ) ] ],
-      Informix => [ [ qw( long_read_len table_name ) ] ],
-      Oracle   => [ [ qw( long_read_len table_name ) ] ],
-      Sybase   => [ [ qw( textsize table_name ) ] ],
+    ( MySQL    => [ [ qw( table_name password lock_password ) ] ],
+      Postgres => [ [ qw( table_name password ) ] ],
+      Informix => [ [ qw( long_read_len table_name password ) ] ],
+      Oracle   => [ [ qw( long_read_len table_name password ) ] ],
+      Sybase   => [ [ qw( textsize table_name password ) ] ],
     );
 
 my %ApacheSessionFlexParams =
     ( store =>
-      { MySQL    => [ [ qw( data_source user_name password ) ],
+      { MySQL    => [ [ qw( data_source user_name ) ],
 		      [ qw( handle ) ] ],
 	Postgres => $ApacheSessionParams{Postgres},
 	File     => [ [ qw( directory ) ] ],
 	DB_File  => [ [ qw( file_name ) ] ],
       },
       lock =>
-      { MySQL     => [ [ qw( lock_data_source lock_user_name lock_password ) ],
+      { MySQL     => [ [ qw( lock_data_source lock_user_name ) ],
 		       [ qw( lock_handle ) ] ],
 	File      => [ [ ] ],
 	Null      => [ [ ] ],
@@ -314,7 +316,7 @@ sub new
     if ( $self->{use_cookie} && ! ( $ENV{MOD_PERL} || $self->{header_object} ) )
     {
         param_error
-            "The header_object parameter is required to use cookies outside of mod_perl";
+            "The header_object parameter is required in order to use cookies outside of mod_perl";
     }
 
     eval "require Apache::Session::$self->{session_class_piece}";
@@ -516,6 +518,18 @@ sub _get_session_id_from_args
     return $self->{param_object}->param( $self->{param_name} );
 }
 
+sub _get_session_id_from_cookie
+{
+    my $self = shift;
+
+    my %c = $self->{cookie_class}->fetch;
+
+    return $c{ $self->{cookie_name} }->value
+        if exists $c{ $self->{cookie_name} };
+
+    return undef;
+}
+
 sub _try_session_id
 {
     my $self = shift;
@@ -534,7 +548,7 @@ sub _try_session_id
                 $session_id, $self->{params};
 	};
 
-        if ($@)
+        if ( $@ || ! tied %s )
         {
             $self->_handle_tie_error( $@, $session_id );
             return;
@@ -549,18 +563,6 @@ sub _try_session_id
     $self->{cookie_is_baked} = 0;
 
     return 1;
-}
-
-sub _get_session_id_from_cookie
-{
-    my $self = shift;
-
-    my %c = $self->{cookie_class}->fetch;
-
-    return $c{ $self->{cookie_name} }->value
-        if exists $c{ $self->{cookie_name} };
-
-    return undef;
 }
 
 sub _handle_tie_error
@@ -615,9 +617,14 @@ sub _bake_cookie
     else
     {
         my $header_object = $self->{header_object};
-        my $meth = $header_object->can('err_header_out') ? 'err_header_out' : 'header_out';
-
-        $header_object->$meth( 'Set-Cookie' => $cookie );
+        for my $meth (@HeaderMethods)
+        {
+            if ( $header_object->can($meth) )
+            {
+                $header_object->$meth( 'Set-Cookie' => $cookie );
+                last;
+            }
+        }
     }
 
     # always set this even if we skipped actually setting the cookie
@@ -833,11 +840,13 @@ cookie has the effect of updating the expiration time.
 =item * header_object => object
 
 When running outside of mod_perl, you must provide an object to which
-the cookie header can be added.  This object must provide either an
-C<err_header_out()> or C<header_out()> method.
+the cookie header can be added.  This object must provide one of the
+following methods: C<err_header_out()>, C<err_headers_out()>,
+C<header_out()>, or C<headers_out()>.  The pluralized versions are
+needed to support mod_perl 2.
 
 Under mod_perl, this will default to the object returned by C<<
-Apache->request >>.
+Apache->request >>.  This may not work under mod_perl 2.
 
 =back
 
@@ -884,7 +893,7 @@ session modules.
 =item * password  =>  password
 
 Corresponds to the C<Password> parameter passed to the DBI-related
-session modules.
+session modules.  Defaults to undef.
 
 =item * handle =>  DBI handle
 
@@ -911,7 +920,7 @@ C<Apache::Session::MySQL>.
 =item * lock_password  =>  password
 
 Corresponds to the C<LockPassword> parameter passed to
-C<Apache::Session::MySQL>.
+C<Apache::Session::MySQL>.  Defaults to undef.
 
 =item * lock_handle  =>  DBI handle
 

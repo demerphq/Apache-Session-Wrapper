@@ -1,3 +1,14 @@
+0.19   2005-02-15
+
+- Add support for Apache::RequestRec as header_object by checking
+header_object for err_headers_out and headers_out methods.
+
+
+0.18   2004-06-30
+
+- Made the password & lock_password parameters default to undef.
+
+
 0.17   2004-04-23
 
 - Fix a bug in checking parameters which could occur when the "commit"
@@ -19,9 +30,9 @@ that signature checks don't fail.
 
 0.14   2004-04-03
 
-- Fix a bug which causes the constructor to complain some required
-parameters were missing when in fact the required parameters had been
-given.  Reported by Jim Mozley.
+- Fix a bug which causes the constructor to complain that some
+required parameters were missing when in fact the required parameters
+had been given.  Reported by Jim Mozley.
 
 
 0.13   2004-03-19
