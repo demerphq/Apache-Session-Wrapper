@@ -10,8 +10,7 @@ if ( $@ || $^O =~ /mac|darwin/ )
 }
 else
 {
-    $requires
-{'Apache::Cookie'} = 0;
+    $requires{'Apache::Cookie'} = 0;
 }
 
 Module::Build->new

@@ -1,8 +1,16 @@
+0.14   2004-04-03
+
+- Fix a bug which causes the constructor to complain some required
+parameters were missing when in fact the required parameters had been
+given.  Reported by Jim Mozley.
+
+
 0.13   2004-03-19
 
 - Allow the cookie expiration to be set to "session", which is
 equivalent to undef, and causes the cookie to expire when the browser
-is closed.
+is closed.  Requested by Herald (RT #5615) for
+MasonX::Request::WithApacheSession.
 
 - Remove some incorrect default values for some parameters, which were
 being set to undef when they shouldn't be.

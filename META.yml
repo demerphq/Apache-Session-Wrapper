@@ -1,17 +1,18 @@
 --- #YAML:1.0
 name: Apache-Session-Wrapper
-version: 0.13
-author:
-  - Dave Rolsky, <autarch@urth.org>
-abstract: A simple wrapper around Apache::Session
+version: 0.14
 license: perl
+distribution_type: module
 requires:
   Apache::Cookie: 0
   Apache::Session: 1.6
   Exception::Class: 0
   Params::Validate: 0.7
+recommends: {}
+build_requires: {}
+conflicts: {}
 provides:
   Apache::Session::Wrapper:
     file: lib/Apache/Session/Wrapper.pm
-    version: 0.13
-generated_by: Module::Build version 0.23
+    version: 0.14
+generated_by: Module::Build version 0.20

@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use base qw(Class::Container);
 
@@ -338,23 +338,19 @@ sub _check_session_params
     my $sets = $ApacheSessionParams{ $self->{session_class_piece} }
 	or param_error "Invalid session class: $self->{class}";
 
-    my @missing = $self->_check_sets($sets);
-
-    param_error "Not all of the required parameters for your chosen session class ($self->{class}) were provided.  Missing the following: @missing."
-	if @missing;
+    $self->_check_sets( $sets, 'session', $self->{class} )
+        if grep { @$_ } @$sets;
 
     if ( $self->{session_class_piece} eq 'Flex' )
     {
 	foreach my $key ( keys %ApacheSessionFlexParams )
 	{
-	    my $subclass = $self->{"$key"};
+	    my $subclass = $self->{$key};
 	    my $sets = $ApacheSessionFlexParams{$key}{$subclass}
 		or param_error "Invalid class for $key: $self->{$key}";
 
-            my @missing = $self->_check_sets($sets);
-
-            param_error "Not all of the required parameters for your chosen $key class ($subclass) were provided.  Missing the following: @missing."
-                if @missing;
+            $self->_check_sets( $sets, $key, $subclass )
+                if grep { @$_ } @$sets;
 	}
     }
 }
@@ -363,13 +359,31 @@ sub _check_sets
 {
     my $self = shift;
     my $sets = shift;
+    my $type = shift;
+    my $class = shift;
 
+    my $matched = 0;
     foreach my $set (@$sets)
     {
-        my @missing = grep { ! exists $self->{"$_"} } @$set;
+        # Don't check for missing elements unless at least one element
+        # is present.
+        if ( grep { exists $self->{$_} } @$set )
+        {
+            $matched = 1;
+        }
+        else
+        {
+            next;
+        }
 
-        return @missing if @missing;
+        my @missing = grep { ! exists $self->{$_} } @$set;
+
+        param_error "Some of the required parameters for your chosen $type class ($class) were missing: @missing."
+            if @missing;
     }
+
+    param_error "None of the required parameters for your chosen $type class ($class) were provided."
+        unless $matched;
 
     return;
 }
@@ -393,7 +407,7 @@ sub _set_session_params
     {
 	foreach my $key ( keys %ApacheSessionFlexParams )
 	{
-	    my $subclass = $self->{"$key"};
+	    my $subclass = $self->{$key};
 	    $params{ $StudlyForm{$key} } = $subclass;
 
 	    $self->_sets_to_params
@@ -412,7 +426,7 @@ sub _set_session_params
     {
         if ( $ENV{MOD_PERL} )
         {
-            eval { require Apache::Cookie; Apache::Cookie->can('bake'); };
+            eval { require Apache::Cookie };
             unless ($@)
             {
                 $self->{cookie_class} = 'Apache::Cookie';
@@ -439,10 +453,10 @@ sub _sets_to_params
     {
 	foreach my $key (@$set)
 	{
-	    if ( exists $self->{"$key"} )
+	    if ( exists $self->{$key} )
 	    {
 		$params->{ $StudlyForm{$key} } =
-		    $self->{"$key"};
+		    $self->{$key};
 	    }
 	}
     }
