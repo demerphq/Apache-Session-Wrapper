@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use base qw(Class::Container);
 
@@ -702,9 +702,16 @@ This class provides the following public methods:
 
 This method creates a new C<Apache::Session::Wrapper> object.
 
+If the parameters you provide are not correct (wrong type, missing
+parameters, etc.), this method throws an
+C<Apache::Session::Wrapper::Exception::Params> exception.  You can
+treat this as a string if you want.
+
 =item * session
 
 This method returns a hash tied to the C<Apache::Session> class.
+
+This method accepts an optional "session_id" parameter.
 
 =item * delete_session
 
@@ -746,8 +753,8 @@ This defaults to true.
 If this is true, an attempt to create a session with a session id that
 does not exist in the session storage will be ignored, and a new
 session will be created instead.  If it is false, a
-C<HTML::Mason::Exception::NonExistentSessionID> exception will be
-thrown instead.
+C<Apache::Session::Wrapper::Exception::NonExistentSessionID> exception
+will be thrown instead.
 
 This defaults to true.
 
