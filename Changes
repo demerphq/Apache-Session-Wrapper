@@ -1,4 +1,10 @@
-0.15   2004-04-06
+0.16   2004-04-08
+
+- No code changes, just include Class::Container in the dependencies.
+Reported via CPAN testers.
+
+
+0.15 2004-04-06
 
 - No code changes, just added the SIGNATURE file to the manifest so
 that signature checks don't fail.

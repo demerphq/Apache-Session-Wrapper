@@ -18,6 +18,7 @@ Module::Build->new
       license         => 'perl',
       sign            => 1,
       requires        => { 'Apache::Session'  => 1.6,
+                           'Class::Container' => 0,
                            'Exception::Class' => 0,
                            'Params::Validate' => 0.70,
                            %requires,
