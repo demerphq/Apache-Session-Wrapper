@@ -1,3 +1,9 @@
+0.15   2004-04-06
+
+- No code changes, just added the SIGNATURE file to the manifest so
+that signature checks don't fail.
+
+
 0.14   2004-04-03
 
 - Fix a bug which causes the constructor to complain some required
