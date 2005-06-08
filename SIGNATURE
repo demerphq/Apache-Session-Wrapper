@@ -1,12 +1,12 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.38.
+signed via the Module::Signature module, version 0.44.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
 
     % cpansign -v
 
-It would check each file's integrity, as well as the signature's
+It will check each file's integrity, as well as the signature's
 validity.  If "==> Signature verified OK! <==" is not displayed,
 the distribution may already have been compromised, and you should
 not run its Makefile.PL or Build.PL.
@@ -15,19 +15,19 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 2754892224ba294f3a0fe2109247a2e95ddb52df Build.PL
-SHA1 d887176b0a42832a5b0aed757d25fe05e78177a3 Changes
+SHA1 b8110ebf3dfc059a60d3b587bf1d4e705d778266 Changes
 SHA1 f235ba4160673bcb7c9d58c2f09dbc7fc0efadea LICENSE
 SHA1 8d04999bab90f7a449b1e9d2cb7b58a49a091eba MANIFEST
-SHA1 ef0110e2af642d86aa8a17bdc4a017d53ea41577 META.yml
+SHA1 762bfba392edf40e808b1fa7468c55f3fb4bf5a1 META.yml
 SHA1 a359d4072690a21ce63e4b393bdbc19d72b6be5a Makefile.PL
 SHA1 b081931e783c93cb74e2943300e87ff0f0833da4 README
-SHA1 afef9f71480dc099aeaf6bc92ebd9672d9a39caa lib/Apache/Session/Wrapper.pm
+SHA1 0ab2eee6fc7db1eff81193b43827e87ebc3d5a5f lib/Apache/Session/Wrapper.pm
 SHA1 899e3c2557dd28ec5ded1ebb656a3374579c80c3 t/01-basic.t
 SHA1 157c4c93c5a1b2325a244c54aa71f790b7addbe5 t/99-pod.t
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.0 (GNU/Linux)
+Version: GnuPG v1.4.1 (GNU/Linux)
 
-iD8DBQFCEmpZ3Or3ZzQuifMRAh2XAJ9XaHFPx4pQ6WcxJ5VDZNi22pcOLQCgu+Gm
-85HR/OIMJz7DQcnkrDS0SqI=
-=9x4g
+iD8DBQFCp16i3Or3ZzQuifMRAielAJ49zyBwjs7hEMVFydb/l7xaxLbCXwCgp6ps
+atH0fDByOaBQPEbiR3tx3nU=
+=WTcF
 -----END PGP SIGNATURE-----

@@ -1,3 +1,10 @@
+0.20   2005-06-08
+
+- Fix to make getting cookies work under mod_perl2.  Reported by a
+semi-anonymous debian user
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=297989).
+
+
 0.19   2005-02-15
 
 - Add support for Apache::RequestRec as header_object by checking

@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.19';
+$VERSION = '0.20';
 
 use base qw(Class::Container);
 
@@ -522,7 +522,7 @@ sub _get_session_id_from_cookie
 {
     my $self = shift;
 
-    my %c = $self->{cookie_class}->fetch;
+    my %c = $self->{cookie_class}->fetch( @{ $self->{new_cookie_args} } );
 
     return $c{ $self->{cookie_name} }->value
         if exists $c{ $self->{cookie_name} };
