@@ -1,8 +1,13 @@
+0.21   2005-06-20
+
+- The fix for mod_perl2 caused a new cookie to be sent for each
+request under mod_perl 1.  I love it!
+
+
 0.20   2005-06-08
 
-- Fix to make getting cookies work under mod_perl2.  Reported by a
-semi-anonymous debian user
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=297989).
+- Fix to make getting cookies work under mod_perl2.  Reported by
+Baldvin Kovacs.
 
 
 0.19   2005-02-15

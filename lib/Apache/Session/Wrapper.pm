@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.20';
+$VERSION = '0.21';
 
 use base qw(Class::Container);
 
@@ -437,6 +437,12 @@ sub _set_session_params
             {
                 $self->{cookie_class} = 'Apache::Cookie';
                 $self->{new_cookie_args} = [ Apache->request ];
+
+                $self->{fetch_cookie_args} =
+                    ( $ENV{MOD_PERL} =~ /(?:1\.9|2\.\d)/
+                      ? $self->{new_cookie_args}
+                      : []
+                    );
             }
         }
 
@@ -445,6 +451,7 @@ sub _set_session_params
             require CGI::Cookie;
             $self->{cookie_class} = 'CGI::Cookie';
             $self->{new_cookie_args} = [];
+            $self->{fetch_cookie_args} = [];
         }
     }
 }
@@ -522,7 +529,7 @@ sub _get_session_id_from_cookie
 {
     my $self = shift;
 
-    my %c = $self->{cookie_class}->fetch( @{ $self->{new_cookie_args} } );
+    my %c = $self->{cookie_class}->fetch( @{ $self->{fetch_cookie_args} } );
 
     return $c{ $self->{cookie_name} }->value
         if exists $c{ $self->{cookie_name} };
