@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.21';
+$VERSION = '0.22';
 
 use base qw(Class::Container);
 
@@ -23,7 +23,7 @@ use Params::Validate qw( validate SCALAR UNDEF BOOLEAN OBJECT );
 Params::Validate::validation_options( on_fail => sub { param_error( join '', @_ ) } );
 
 
-my @HeaderMethods = qw( err_header_out  err_headers_out header_out headers_out );
+my @HeaderMethods = qw( err_header_out err_headers_out header_out headers_out );
 
 my %params =
     ( always_write =>
@@ -628,7 +628,14 @@ sub _bake_cookie
         {
             if ( $header_object->can($meth) )
             {
-                $header_object->$meth( 'Set-Cookie' => $cookie );
+                if ( $header_object->$meth->can('add') )
+                {
+                    $header_object->$meth->add( 'Set-Cookie' => $cookie );
+                }
+                else
+                {
+                    $header_object->$meth( 'Set-Cookie' => $cookie );
+                }
                 last;
             }
         }
