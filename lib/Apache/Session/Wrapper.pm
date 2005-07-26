@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 use base qw(Class::Container);
 
@@ -364,34 +364,18 @@ sub _check_sets
     my $type = shift;
     my $class = shift;
 
-    my $matched = 0;
+    my @missing;
     foreach my $set (@$sets)
     {
-        # Don't check for missing elements unless at least one element
-        # is present.
-        if ( grep { exists $self->{$_} } @$set )
-        {
-            $matched = 1;
-        }
-        else
-        {
-            next;
-        }
+        my @matched = grep { exists $self->{$_} } @$set;
 
-        my @missing = grep { ! exists $self->{$_} } @$set;
+        return if @matched == @$set;
 
-        # At least one set has been checked if we got this far, and
-        # that's enough.
-        last unless @missing;
-
-        param_error "Some of the required parameters for your chosen $type class ($class) were missing: @missing."
-            if @missing;
+        @missing = grep { ! exists $self->{$_} } @$set;
     }
 
-    param_error "None of the required parameters for your chosen $type class ($class) were provided."
-        unless $matched;
-
-    return;
+    param_error "Some or all of the required parameters for your chosen $type class ($class) were provided."
+                . "  The following parameters were missing: @missing\n";
 }
 
 sub _set_session_params

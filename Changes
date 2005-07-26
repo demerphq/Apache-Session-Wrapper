@@ -1,3 +1,10 @@
+0.23   2005-07-26
+
+- If two sets of valid parameters for a class shared a parameter, an
+error would be thrown if you used the second set, even if it was
+complete.  Reported by Victor Felix.
+
+
 0.22   2005-07-18
 
 - Another fix for mod_perl2, this one from Jonas.
