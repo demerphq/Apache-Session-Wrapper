@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.23';
+$VERSION = '0.24';
 
 use base qw(Class::Container);
 
@@ -238,7 +238,7 @@ my %ApacheSessionParams =
 my %OptionalApacheSessionParams =
     ( MySQL    => [ [ qw( table_name password lock_password ) ] ],
       Postgres => [ [ qw( table_name password ) ] ],
-      Informix => [ [ qw( long_read_len table_name password ) ] ],
+      Informix => [ [ qw( table_name password ) ] ],
       Oracle   => [ [ qw( long_read_len table_name password ) ] ],
       Sybase   => [ [ qw( textsize table_name password ) ] ],
     );
@@ -277,8 +277,8 @@ __PACKAGE__->valid_params(%params);
     ( $ApacheSessionFlexParams{store}{Postgres} ) x 3;
 
 my %OptionalApacheSessionFlexParams =
-    ( Sybase => { store => [ qw( textsize ) ] },
-      Oracle => { store => [ qw( long_read_len ) ] },
+    ( store => { map { $_ => $OptionalApacheSessionParams{$_} }
+                 qw( MySQL Postgres Informix Oracle Sybase ) },
     );
 
 sub _studly_form
@@ -305,7 +305,6 @@ $StudlyForm{textsize} = 'textsize';
 
 sub new
 {
-
     my $class = shift;
 
     my $self = $class->SUPER::new(@_);

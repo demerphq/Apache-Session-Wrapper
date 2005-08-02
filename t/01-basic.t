@@ -5,7 +5,7 @@ use strict;
 use File::Path;
 use File::Spec;
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 use_ok('Apache::Session::Wrapper');
 
@@ -125,17 +125,26 @@ untie %session;
 rmtree( $params{directory} );
 
 {
-    eval { local $^W = 0;
-           Apache::Session::Wrapper->new( class     => 'Flex',
-                                          store     => 'MySQL',
-                                          lock      => 'Null',
-                                          generate  => 'MD5',
-                                          serialize => 'Storable',
-                                          data_source => 'foo',
-                                          user_name   => 'foo',
-                                          password    => 'foo',
-                                        ) };
-    unlike( $@, qr/parameters/ );
+    no warnings 'redefine';
+    # so attempt to connect to MySQL doesn't happen
+    local *Apache::Session::Wrapper::_make_session = sub {};
+
+    my $wrapper =
+        eval { local $^W = 0;
+               Apache::Session::Wrapper->new( class     => 'Flex',
+                                              store     => 'MySQL',
+                                              lock      => 'Null',
+                                              generate  => 'MD5',
+                                              serialize => 'Storable',
+                                              data_source => 'foo',
+                                              user_name   => 'bar',
+                                              password    => 'baz',
+                                            ) };
+    unlike( $@, qr/parameters/, 'pass correct parameters for MySQL flex' );
+
+    is( $wrapper->{params}{DataSource}, 'foo', 'DataSource is foo' );
+    is( $wrapper->{params}{UserName}, 'bar', 'UserName is bar' );
+    is( $wrapper->{params}{Password}, 'baz', 'Password is baz' );
 }
 
 {
@@ -146,7 +155,7 @@ rmtree( $params{directory} );
                                           password    => 'foo',
                                           commit      => 0,
                                         ) };
-    unlike( $@, qr/parameters/ );
+    unlike( $@, qr/parameters/, 'first param set for Pg' );
 }
 
 {
@@ -157,7 +166,7 @@ rmtree( $params{directory} );
                                           handle => $dbh,
                                           commit => 0,
                                         ) };
-    unlike( $@, qr/parameters/ );
+    unlike( $@, qr/parameters/, 'second param set for Pg' );
 }
 
 {
@@ -166,5 +175,5 @@ rmtree( $params{directory} );
     eval { Apache::Session::Wrapper->new( class  => 'Postgres',
                                           commit => 0,
                                         ) };
-    like( $@, qr/required parameters.+missing: handle/ );
+    like( $@, qr/required parameters.+missing: handle/, 'incomplete params for Pg' );
 }

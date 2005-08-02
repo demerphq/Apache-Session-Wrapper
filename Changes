@@ -1,3 +1,10 @@
+0.24   2005-08-01
+
+- Optional parameters for store modules were not handled properly when
+using Flex as the session class.  Added some tests.  Reported by Gavin
+Carr.
+
+
 0.23   2005-07-26
 
 - If two sets of valid parameters for a class shared a parameter, an
