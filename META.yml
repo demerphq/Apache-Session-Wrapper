@@ -1,10 +1,12 @@
 ---
 name: Apache-Session-Wrapper
-version: 0.24
+version: 0.25
 author:
   - 'Dave Rolsky, <autarch@urth.org>'
 abstract: A simple wrapper around Apache::Session
 license: perl
+resources:
+  license: http://dev.perl.org/licenses/
 requires:
   Apache::Cookie: 0
   Apache::Session: 1.6
@@ -14,5 +16,5 @@ requires:
 provides:
   Apache::Session::Wrapper:
     file: lib/Apache/Session/Wrapper.pm
-    version: 0.24
-generated_by: Module::Build version 0.2701
+    version: 0.25
+generated_by: Module::Build version 0.2702

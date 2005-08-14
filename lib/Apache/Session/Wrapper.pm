@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.24';
+$VERSION = '0.25';
 
 use base qw(Class::Container);
 
@@ -580,7 +580,6 @@ sub _bake_cookie
     my $self = shift;
 
     my $expires = shift || $self->{cookie_expires};
-
     $expires = undef if defined $expires && $expires =~ /^session$/i;
 
     my $domain = $self->{cookie_domain};
@@ -590,10 +589,13 @@ sub _bake_cookie
             ( @{ $self->{new_cookie_args} },
               -name    => $self->{cookie_name},
               -value   => $self->{session_id},
-              -expires => $expires,
-              ( defined $domain ?
-                ( -domain  => $domain ) :
-                ()
+              ( defined $expires
+                ? ( -expires => $expires )
+                : ()
+              ),
+              ( defined $domain
+                ? ( -domain  => $domain )
+                : ()
               ),
               -path    => $self->{cookie_path},
               -secure  => $self->{cookie_secure},

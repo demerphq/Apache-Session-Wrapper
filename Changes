@@ -1,3 +1,9 @@
+0.25   2005-08-14
+
+- Silenced a warning that could occur when using session length
+cookies under mod_perl.
+
+
 0.24   2005-08-01
 
 - Optional parameters for store modules were not handled properly when
