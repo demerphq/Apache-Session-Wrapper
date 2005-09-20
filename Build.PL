@@ -1,27 +1,22 @@
 use strict;
-
 use Module::Build;
 
-my %requires;
-eval { require mod_perl };
-if ( $@ || $^O =~ /mac|darwin/ )
-{
-    $requires{'CGI::Cookie'} = 0;
-}
-else
-{
-    $requires{'Apache::Cookie'} = 0;
-}
+my $build_pkg =
+    eval { require Apache::TestMB } ? 'Apache::TestMB' : 'Module::Build';
 
-Module::Build->new
-    ( module_name     => 'Apache::Session::Wrapper',
-      license         => 'perl',
-      sign            => 1,
-      requires        => { 'Apache::Session'  => 1.6,
-                           'Class::Container' => 0,
-                           'Exception::Class' => 0,
-                           'Params::Validate' => 0.70,
-                           %requires,
-                         },
-      create_makefile_pl => 'passthrough',
-    )->create_build_script;
+my $build =
+    $build_pkg->new
+        ( module_name     => 'Apache::Session::Wrapper',
+          license         => 'perl',
+          sign            => 1,
+          requires        => { 'Apache::Session'  => 1.6,
+                               'Class::Container' => 0,
+                               'Exception::Class' => 0,
+                               'Params::Validate' => 0.70,
+                             },
+          build_requires  => { 'Apache::Test'     => 0 },
+          create_makefile_pl => 'passthrough',
+        );
+
+$build->create_build_script;
+$build->add_to_cleanup( 't/session' );

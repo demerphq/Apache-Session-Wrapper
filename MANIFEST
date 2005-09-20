@@ -8,4 +8,7 @@ META.yml
 README
 t/01-basic.t
 t/99-pod.t
+t/apache/basic.t
+t/conf/extra.conf.in
+t/response/TestApache/basic.pm
 SIGNATURE    Added here by Module::Build

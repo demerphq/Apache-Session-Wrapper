@@ -1,3 +1,12 @@
+0.26   2005-09-20
+
+- Finally should work properly under both mp1 and mp2.  Patches and
+tests by Daisuke Maki.
+
+- No longer depends on Apache::Cookie or Apache2::Cookie, but it will
+use them if it can instead of CGI::Cookie.
+
+
 0.25   2005-08-14
 
 - Silenced a warning that could occur when using session length

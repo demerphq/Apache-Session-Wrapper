@@ -1,0 +1,2 @@
+# This is the location where file-based sessions are stored
+PerlSetVar SessionDir @ServerRoot@/session

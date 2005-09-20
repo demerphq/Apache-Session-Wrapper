@@ -4,7 +4,20 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.25';
+$VERSION = '0.26';
+
+my $MOD_PERL = _find_mp_version();
+
+sub _find_mp_version
+{
+    return 0 unless $ENV{MOD_PERL};
+
+    return
+        ( $ENV{MOD_PERL} =~ /(?:1\.9|2\.\d)/
+          ? 2
+          : 1
+        );
+}
 
 use base qw(Class::Container);
 
@@ -14,7 +27,7 @@ use Exception::Class ( 'Apache::Session::Wrapper::Exception::NonExistentSessionI
 		       { description => 'A non-existent session id was used',
 			 fields => [ 'session_id' ] },
                        'Apache::Session::Wrapper::Exception::Params' =>
-		       { description => 'A non-existent session id was used',
+		       { description => 'An invalid parameter or set of parameters was given',
                          alias => 'param_error' },
 		     );
 
@@ -413,16 +426,30 @@ sub _set_session_params
 
     if ( $self->{use_cookie} )
     {
-        if ( $ENV{MOD_PERL} )
+        if ($MOD_PERL)
         {
-            eval { require Apache::Cookie };
+            # load different classes depending on mod_perl 1/2
+            # (only support mod_perl >= 2.00-RC5)
+            my $cookie_class = $MOD_PERL == 2 ? 'Apache2::Cookie' : 'Apache::Cookie';
+            eval "require $cookie_class";
+
             unless ($@)
             {
-                $self->{cookie_class} = 'Apache::Cookie';
-                $self->{new_cookie_args} = [ Apache->request ];
+                $self->{cookie_class} = $cookie_class;
+
+                $self->{new_cookie_args} =
+                    [ $MOD_PERL == 2
+                      ? Apache2::RequestUtil->request
+                      : Apache->request
+                    ];
 
                 $self->{fetch_cookie_args} =
-                    ( $ENV{MOD_PERL} =~ /(?:1\.9|2\.\d)/
+                    ( $MOD_PERL == 2
+                      ? $self->{new_cookie_args}
+                      : []
+                    );
+                $self->{bake_cookie_args} =
+                    ( $MOD_PERL == 2
                       ? $self->{new_cookie_args}
                       : []
                     );
@@ -512,11 +539,19 @@ sub _get_session_id_from_cookie
 {
     my $self = shift;
 
-    my %c = $self->{cookie_class}->fetch( @{ $self->{fetch_cookie_args} } );
+    if ( $MOD_PERL == 2 )
+    {
+        my $jar = Apache2::Cookie::Jar->new( @{ $self->{fetch_cookie_args} } );
+        my $c   = $jar->cookies( $self->{cookie_name} );
+        return $c->value if $c;
+    }
+    else
+    {
+        my %c = $self->{cookie_class}->fetch( @{ $self->{fetch_cookie_args} } );
 
-    return $c{ $self->{cookie_name} }->value
-        if exists $c{ $self->{cookie_name} };
-
+        return $c{ $self->{cookie_name} }->value
+            if exists $c{ $self->{cookie_name} };
+    }
     return undef;
 }
 
@@ -603,8 +638,7 @@ sub _bake_cookie
 
     if ( $cookie->can('bake') )
     {
-        # Apache::Cookie
-        $cookie->bake;
+        $cookie->bake( @{ $self->{bake_cookie_args} } );
     }
     else
     {
