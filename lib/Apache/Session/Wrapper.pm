@@ -4,24 +4,11 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.26';
-
-my $MOD_PERL = _find_mp_version();
-
-sub _find_mp_version
-{
-    return 0 unless $ENV{MOD_PERL};
-
-    return
-        ( $ENV{MOD_PERL} =~ /(?:1\.9|2\.\d)/
-          ? 2
-          : 1
-        );
-}
+$VERSION = '0.28';
 
 use base qw(Class::Container);
 
-use Apache::Session 1.6;
+use Apache::Session 1.81;
 
 use Exception::Class ( 'Apache::Session::Wrapper::Exception::NonExistentSessionID' =>
 		       { description => 'A non-existent session id was used',
@@ -32,9 +19,23 @@ use Exception::Class ( 'Apache::Session::Wrapper::Exception::NonExistentSessionI
 		     );
 
 use Params::Validate 0.70;
-use Params::Validate qw( validate SCALAR UNDEF BOOLEAN OBJECT );
+use Params::Validate qw( validate SCALAR UNDEF BOOLEAN ARRAYREF OBJECT );
 Params::Validate::validation_options( on_fail => sub { param_error( join '', @_ ) } );
 
+use Scalar::Util ();
+
+
+my $MOD_PERL = _find_mp_version();
+sub _find_mp_version
+{
+    return 0 unless $ENV{MOD_PERL};
+
+    return
+        ( $ENV{MOD_PERL} =~ /(?:1\.9|2\.\d)/
+          ? 2
+          : 1
+        );
+}
 
 my @HeaderMethods = qw( err_header_out err_headers_out header_out headers_out );
 
@@ -228,6 +229,10 @@ my %params =
 	optional => 1,
 	descr => 'Path used by Apache::Session::PHP' },
 
+      session_id =>
+      { type => SCALAR,
+	optional => 1,
+	descr => 'Try this session id first when making a session' },
     );
 
 # What set of parameters are required for each session class.
@@ -263,6 +268,7 @@ my %ApacheSessionFlexParams =
 	Postgres => $ApacheSessionParams{Postgres},
 	File     => [ [ qw( directory ) ] ],
 	DB_File  => [ [ qw( file_name ) ] ],
+	PHP      => $ApacheSessionParams{PHP},
       },
       lock =>
       { MySQL     => [ [ qw( lock_data_source lock_user_name ) ],
@@ -281,10 +287,9 @@ my %ApacheSessionFlexParams =
 	Base64   => [ [ ] ],
 	Sybase   => [ [ ] ],
 	UUEncode => [ [ ] ],
+	PHP      => [ [ ] ],
       },
     );
-
-__PACKAGE__->valid_params(%params);
 
 @{ $ApacheSessionFlexParams{store} }{ qw( Informix Oracle Sybase ) } =
     ( $ApacheSessionFlexParams{store}{Postgres} ) x 3;
@@ -294,6 +299,46 @@ my %OptionalApacheSessionFlexParams =
                  qw( MySQL Postgres Informix Oracle Sybase ) },
     );
 
+sub _SetValidParams {
+    my $class = shift;
+
+    my %extra;
+    for my $hash ( \%ApacheSessionParams,
+                   \%OptionalApacheSessionParams,
+                   @ApacheSessionFlexParams{ qw( store lock generate serialize ) },
+                   @OptionalApacheSessionFlexParams{ qw( store lock generate serialize ) },
+                 )
+    {
+        for my $p ( map { @$_ } map { @$_ } values %$hash )
+        {
+            $extra{$p} = { optional => 1 };
+        }
+    }
+
+    $class->valid_params( %extra, %params );
+    $class->SetStudlyForms();
+}
+__PACKAGE__->_SetValidParams();
+
+my %StudlyForm;
+sub SetStudlyForms
+{
+    %StudlyForm =
+        ( map { $_ => _studly_form($_) }
+          map { ref $_ ? @$_ :$_ }
+          map { @$_ }
+          ( values %ApacheSessionParams ),
+          ( values %OptionalApacheSessionParams ),
+          ( map { values %{ $ApacheSessionFlexParams{$_} } }
+            keys %ApacheSessionFlexParams ),
+          ( map { values %{ $OptionalApacheSessionFlexParams{$_} } }
+            keys %OptionalApacheSessionFlexParams ),
+        );
+
+    # why Apache::Session does this I do not know
+    $StudlyForm{textsize} = 'textsize';
+}
+
 sub _studly_form
 {
     my $string = shift;
@@ -301,26 +346,66 @@ sub _studly_form
     return $string;
 }
 
-my %StudlyForm =
-    ( map { $_ => _studly_form($_) }
-      map { ref $_ ? @$_ :$_ }
-      map { @$_ }
-      ( values %ApacheSessionParams ),
-      ( values %OptionalApacheSessionParams ),
-      ( map { values %{ $ApacheSessionFlexParams{$_} } }
-	keys %ApacheSessionFlexParams ),
-      ( map { values %{ $OptionalApacheSessionFlexParams{$_} } }
-	keys %OptionalApacheSessionFlexParams ),
-    );
+sub RegisterClass {
+    my $class = shift;
+    my %p = validate( @_, { name => { type => SCALAR },
+                            required => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                            optional => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                          },
+                    );
 
-# why Apache::Session does this I do not know
-$StudlyForm{textsize} = 'textsize';
+    $p{name} =~ s/^Apache::Session:://;
+
+    $ApacheSessionParams{ $p{name} } =
+        ( ref $p{required}
+          ? $p{required}
+          : $ApacheSessionParams{ $p{required} }
+        );
+
+    $OptionalApacheSessionParams{ $p{name} } =
+        ( ref $p{optional}
+          ? [ $p{optional} ]
+          : $OptionalApacheSessionParams{ $p{optional} }
+        );
+
+    $class->_SetValidParams();
+}
+
+sub RegisterFlexClass {
+    my $class = shift;
+    my %p = validate( @_, { type => { type => SCALAR,
+                                      regex => qr/^(?:store|lock|generate|serialize)/,
+                                    },
+                            name => { type => SCALAR },
+                            required => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                            optional => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                          },
+                    );
+
+    $p{name} =~ s/^Apache::Session:://;
+    $p{name} =~ s/^\Q$p{type}\E:://i;
+
+    $ApacheSessionFlexParams{ $p{type} }{ $p{name} } =
+        ( ref $p{required}
+          ? $p{required}
+          : $ApacheSessionFlexParams{ $p{type} }{ $p{required} }
+        );
+
+    $OptionalApacheSessionFlexParams{ $p{type} }{ $p{name} } =
+        ( ref $p{optional}
+          ? [ $p{optional} ]
+          : $OptionalApacheSessionFlexParams{ $p{type} }{ $p{optional} }
+        );
+
+    $class->_SetValidParams();
+}
 
 sub new
 {
     my $class = shift;
+    my %p = @_;
 
-    my $self = $class->SUPER::new(@_);
+    my $self = $class->SUPER::new(%p);
 
     $self->_check_session_params;
     $self->_set_session_params;
@@ -331,10 +416,14 @@ sub new
             "The header_object parameter is required in order to use cookies outside of mod_perl";
     }
 
-    eval "require Apache::Session::$self->{session_class_piece}";
-    die $@ if $@;
+    my $session_class = "Apache::Session::$self->{session_class_piece}";
+    unless ( $session_class->can('TIEHASH') )
+    {
+        eval "require $session_class";
+        die $@ if $@;
+    }
 
-    $self->_make_session;
+    $self->_make_session( $p{session_id} );
 
     $self->_bake_cookie
         if $self->{use_cookie} && ! $self->{cookie_is_baked};
@@ -424,44 +513,54 @@ sub _set_session_params
 
     $self->{params} = \%params;
 
-    if ( $self->{use_cookie} )
+    $self->_set_cookie_fields
+        if $self->{use_cookie};
+}
+
+sub _set_cookie_fields
+{
+    my $self = shift;
+
+    if ($MOD_PERL)
     {
-        if ($MOD_PERL)
+        my $cookie_class =
+            $MOD_PERL == 2 ? 'Apache2::Cookie' : 'Apache::Cookie';
+        unless ( $cookie_class->can('new') )
         {
-            # load different classes depending on mod_perl 1/2
-            # (only support mod_perl >= 2.00-RC5)
-            my $cookie_class = $MOD_PERL == 2 ? 'Apache2::Cookie' : 'Apache::Cookie';
             eval "require $cookie_class";
 
-            unless ($@)
+            if ($@)
             {
-                $self->{cookie_class} = $cookie_class;
-
-                $self->{new_cookie_args} =
-                    [ $MOD_PERL == 2
-                      ? Apache2::RequestUtil->request
-                      : Apache->request
-                    ];
-
-                $self->{fetch_cookie_args} =
-                    ( $MOD_PERL == 2
-                      ? $self->{new_cookie_args}
-                      : []
-                    );
-                $self->{bake_cookie_args} =
-                    ( $MOD_PERL == 2
-                      ? $self->{new_cookie_args}
-                      : []
-                    );
+                require CGI::Cookie;
+                $cookie_class = 'CGI::Cookie';
             }
         }
 
-        unless ( $self->{cookie_class} )
+        $self->{cookie_class} = $cookie_class;
+
+        if ( $self->{cookie_class} eq 'CGI::Cookie' )
         {
-            require CGI::Cookie;
-            $self->{cookie_class} = 'CGI::Cookie';
             $self->{new_cookie_args} = [];
             $self->{fetch_cookie_args} = [];
+        }
+        else
+        {
+            $self->{new_cookie_args} =
+                [ $MOD_PERL == 2
+                  ? Apache2::RequestUtil->request
+                  : Apache->request
+                ];
+
+            $self->{fetch_cookie_args} =
+                ( $MOD_PERL == 2
+                  ? $self->{new_cookie_args}
+                  : []
+                );
+            $self->{bake_cookie_args} =
+                ( $MOD_PERL == 2
+                  ? $self->{new_cookie_args}
+                  : []
+                );
         }
     }
 }
@@ -488,15 +587,10 @@ sub _sets_to_params
 sub _make_session
 {
     my $self = shift;
-    my %p = validate( @_,
-		      { session_id =>
-			{ type => SCALAR,
-                          optional => 1,
-			},
-		      } );
+    my $session_id = shift;
 
     return if
-        defined $p{session_id} && $self->_try_session_id( $p{session_id} );
+        defined $session_id && $self->_try_session_id( $session_id );
 
     my $id = $self->_get_session_id;
     return if defined $id && $self->_try_session_id($id);
@@ -573,7 +667,7 @@ sub _try_session_id
                 $session_id, $self->{params};
 	};
 
-        if ( $@ || ! tied %s )
+        if ( $@ || ! tied %s || ! $s{_session_id} )
         {
             $self->_handle_tie_error( $@, $session_id );
             return;
@@ -596,7 +690,7 @@ sub _handle_tie_error
     my $err = shift;
     my $session_id = shift;
 
-    if ( $err =~ /Object does not exist/ )
+    if ( $err =~ /Object does not exist/ && defined $session_id )
     {
         return if $self->{allow_invalid_id};
 
@@ -606,7 +700,9 @@ sub _handle_tie_error
     }
     else
     {
-        die $@;
+        my $error =
+            $@ ? $@ : "Tying to Apache::Session::$self->{session_class_piece} failed but did not throw an exception";
+        die $error;
     }
 }
 
@@ -647,7 +743,8 @@ sub _bake_cookie
         {
             if ( $header_object->can($meth) )
             {
-                if ( $header_object->$meth->can('add') )
+                if ( Scalar::Util::blessed( $header_object->$meth() )
+                     && $header_object->$meth->can('add') )
                 {
                     $header_object->$meth->add( 'Set-Cookie' => $cookie );
                 }
@@ -670,10 +767,16 @@ sub _bake_cookie
 sub session
 {
     my $self = shift;
+    my %p = validate( @_,
+		      { session_id =>
+			{ type => SCALAR,
+                          optional => 1,
+			},
+		      } );
 
-    if ( ! $self->{session} || @_ )
+    if ( ! $self->{session} || %p )
     {
-        $self->_make_session(@_);
+        $self->_make_session( $p{session_id} );
 
         $self->_bake_cookie
             if $self->{use_cookie} && ! $self->{cookie_is_baked};
@@ -766,7 +869,7 @@ This method creates a new C<Apache::Session::Wrapper> object.
 If the parameters you provide are not correct (wrong type, missing
 parameters, etc.), this method throws an
 C<Apache::Session::Wrapper::Exception::Params> exception.  You can
-treat this as a string if you want.
+treat this exception as a string if you want.
 
 =item * session
 
@@ -788,6 +891,81 @@ This module accepts quite a number of parameters, most of which are
 simply passed through to C<Apache::Session>.  For this reason, you are
 advised to familiarize yourself with the C<Apache::Session>
 documentation before attempting to configure this module.
+
+You can also register C<Apache::Session> classes, or the classes used
+for doing the work in C<Apache::Session::Flex>. See L<REGISTERING
+CLASSES> for details.
+
+=head2 Supported Classes
+
+The following classes are already supported and do not require
+registration:
+
+=over 4
+
+=item * Apache::Session::MySQL
+
+=item * Apache::Session::Postgres
+
+=item * Apache::Session::Oracle
+
+=item * Apache::Session::Informix
+
+=item * Apache::Session::Sybase
+
+=item * Apache::Session::File
+
+=item * Apache::Session::DB_File
+
+=item * Apache::Session::PHP
+
+=item * Apache::Session::Flex
+
+=back
+
+The following classes can be used with C<Apache::Session::Flex>:
+
+=over 4
+
+=item * Apache::Session::Store::MySQL
+
+=item * Apache::Session::Store::Postgres
+
+=item * Apache::Session::Store::Informix
+
+=item * Apache::Session::Store::Oracle
+
+=item * Apache::Session::Store::Sybase
+
+=item * Apache::Session::Store::File
+
+=item * Apache::Session::Store::DB_File
+
+=item * Apache::Session::Store::PHP
+
+=item * Apache::Session::Lock::MySQL
+
+=item * Apache::Session::Lock::File
+
+=item * Apache::Session::Lock::Null
+
+=item * Apache::Session::Lock::Semaphore
+
+=item * Apache::Session::Generate::MD5
+
+=item * Apache::Session::Generate::ModUsertrack
+
+=item * Apache::Session::Serialize::Storable
+
+=item * Apache::Session::Serialize::Base64
+
+=item * Apache::Session::Serialize::Sybase
+
+=item * Apache::Session::Serialize::UUEncode
+
+=item * Apache::Session::Serialize::PHP
+
+=back
 
 =head2 Generic Parameters
 
@@ -819,6 +997,11 @@ will be thrown instead.
 
 This defaults to true.
 
+=item * session_id  =>  string
+
+Try this session id first and use it if it exist. If the session does
+not exist, it will ignore this parameter and make a new session.
+
 =back
 
 =head2 Cookie-Related Parameters
@@ -827,11 +1010,9 @@ This defaults to true.
 
 =item * use_cookie  =>  boolean
 
-If true, then this module will use C<Apache::Cookie> or C<CGI::Cookie>
-(as appropriate) to set and read cookies that contain the session id.
-
-The cookie will be set again every time the client accesses a Mason
-component unless the C<cookie_resend> parameter is false.
+If true, then this module will use one of C<Apache::Cookie>,
+C<Apache2::Cookie> or C<CGI::Cookie> (as appropriate) to set and read
+cookies that contain the session id.
 
 =item * cookie_name  =>  name
 
@@ -878,8 +1059,9 @@ following methods: C<err_header_out()>, C<err_headers_out()>,
 C<header_out()>, or C<headers_out()>.  The pluralized versions are
 needed to support mod_perl 2.
 
-Under mod_perl, this will default to the object returned by C<<
-Apache->request >>.  This may not work under mod_perl 2.
+Under mod_perl 1, this will default to the object returned by C<<
+Apache->request() >>. Under mod_perl 2 we call C<<
+Apache2::RequestUtil->request() >>
 
 =back
 
@@ -895,8 +1077,6 @@ name of the parameter that is checked.
 
 If you are also using cookies, then the module checks the param object
 I<first>, and then it checks for a cookie.
-
-The session id is available from C<< $m->session->{_session_id} >>.
 
 =item * param_object  =>  object
 
@@ -1047,9 +1227,102 @@ If it ends up using C<CGI::Cookie> then must provide a "header_object"
 parameter.  The module calls C<err_header_out()> or C<header_out()> on
 the provided object, using the former if it's available.
 
+=head1 REGISTERING CLASSES
+
+In order to support any C<Apache::Session> subclasses, this module
+provides a simple registration mechanism.
+
+You can register an C<Apache::Session> subclass, or a class intended
+to provide a class that implements something required by
+C<Apache::Session::Flex>.
+
+=head2 Registering a Complete Subclass
+
+This is done by calling C<< Apache::Session::Wrapper->RegisterClass() >>:
+
+  Apache::Session::Wrapper->RegisterClass
+      ( name     => 'MyClass',
+        required => [ [ qw( param1 param2 ) ],
+                      [ qw( param3 param4 ) ] ],
+        optional => [ 'optional_p' ],
+      );
+
+  Apache::Session::Wrapper->RegisterClass
+      ( name     => 'Apache::Session::MyFile',
+        required => 'File',
+        optional => 'File',
+      );
+
+The C<RegisterClass()> method takes the following options:
+
+=over 4
+
+=item * name
+
+This should be the name of the class you are registering. The actual
+class must start with "Apache::Session::", but this part does not need
+to be included when registering the class (it's optional).
+
+=item * required
+
+These are the required parameters for this class.
+
+The value of this parameter can either be a string or a reference to
+an array of array references.
+
+If it is a string, then it identifies an existing C<Apache::Session>
+subclass which is already registered or built-in, like "File" or
+"Postgres".
+
+If it an array reference, then I<that reference> should in turn
+contain one or more array references. Each of those contained
+references represents one set of required parameters. When an
+C<Apache::Session::Wrapper> object is constructed, only one of these
+sets must be passed in. For example:
+
+  required => [ [ qw( p1 p2 ) ],
+                [ qw( p2 p3 p4 ) ] ]
+
+This says that either "p1" and "p2" must be provided, I<or> "p2",
+"p3", and "p4".
+
+If there are no required parameters for this class, then the
+"required" parameter can be omitted.
+
+=item * optional
+
+This specifies optional parameters, and should just be a simple array
+reference.
+
+=back
+
+=head2 Registering a Subclass for Flex
+
+Registering a subclass that can be used with C<Apache::Session::Flex>
+is very similar to registering a complete class:
+
+  Apache::Session::Wrapper->RegisterFlexClass
+      ( name     => 'MyClass',
+        type     => 'Store',
+        required => [ [ qw( param1 param2 ) ],
+                      [ qw( param3 param4 ) ] ],
+        optional => [ 'optional_p' ],
+      );
+
+  Apache::Session::Wrapper->RegisterFlexClass
+      ( name     => 'Apache::Session::Store::MyFile',
+        type     => 'store',
+        required => 'File',
+        optional => 'File',
+      );
+
+The C<RegisterFlexClass()> method has the same parameters as
+C<RegisterClass()>, but it also requires a "type" parameter. This must
+be one of "store", "lock", "generate", or "serialize".
+
 =head1 SUBCLASSING
 
-This class provides a simply hook for subclasses.  Before trying to
+This class provides a simple hook for subclasses.  Before trying to
 get a session id from the URL or cookie, it calls a method named
 C<_get_session_id()>.  In this class, that method is a no-op, but you
 can override this in a subclass.

@@ -2,12 +2,13 @@
 
 use strict;
 
-use File::Path;
 use File::Spec;
+use File::Temp ();
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 
 use_ok('Apache::Session::Wrapper');
+
 
 my %params =
     ( class     => 'Flex',
@@ -17,16 +18,10 @@ my %params =
       serialize => 'Storable',
     );
 
-foreach ( [ directory => 'Apache-Session-Wrapper-sessions-test' ],
-        )
-{
-    my $dir = File::Spec->catfile( File::Spec->tmpdir, $_->[1] );
-    mkpath($dir);
+$params{directory} = File::Temp::tempdir( CLEANUP => 1 );
 
-    $params{ $_->[0] } = $dir;
-}
-
-# will be used below in various ways
+# We do this to generate a pre-existing session id that will be used
+# in the tests below.
 use Apache::Session::Flex;
 my %session;
 tie %session, 'Apache::Session::Flex', undef,
@@ -109,10 +104,13 @@ untie %session;
 
     is( $w->session( session_id => $id )->{bar}{baz}, 50,
         'always write is off - stored value' );
+
+    $w = Apache::Session::Wrapper->new( %params, session_id => $id );
+    is( $w->session->{_session_id}, $id, 'id matches session id given to new()' );
 }
 
 {
-    my $w = Apache::Session::Wrapper->new( %params, always_write => 0 );
+    my $w = Apache::Session::Wrapper->new( %params );
 
     $w->session( session_id => $id )->{quux} = 100;
 
@@ -121,8 +119,6 @@ untie %session;
     is( $w->session( session_id => $id )->{quux}, undef,
         'session is empty after delete_session' );
 }
-
-rmtree( $params{directory} );
 
 {
     no warnings 'redefine';

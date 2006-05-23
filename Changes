@@ -1,3 +1,32 @@
+0.28   2006-05-23
+
+- Allow a session_id parameter to the constructor, to force the use of
+a particular existing session.
+
+- Fixed a bug where failing to create a new session was ignored if
+allow_invalid_id was true.
+
+- Detect very weird case where tying to tie to Apache::Session
+succeeds but the tied hash has no _session_id key. This now throws an
+exception.
+
+- Fixed bug when the header_object ->can('header_out') but this method
+does not return an object, as with HTML::Mason::FakeApache. Reported
+by Hans Dieter.
+
+- The logic to load an appropriate cookie class if the class was
+already loaded and an exception had previously been thrown by an
+unrelated class.
+
+- Added a way to register session subclass via RegisterClass() and
+RegisterFlexClass(), to allow people to use any session subclass they
+want without needing explicit support in Apache::Session::Wrapper.
+
+0.27   not released
+
+- This was a version used internally at Socialtext, but never
+released.
+
 0.26   2005-09-20
 
 - Finally should work properly under both mp1 and mp2.  Patches and
