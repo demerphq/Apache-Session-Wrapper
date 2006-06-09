@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Apache::Test qw(:withtestmore);
 use Apache::TestUtil;
 use Apache::TestRequest qw(GET);
@@ -20,3 +20,4 @@ $res->header('set-cookie') =~ m{asw_cookie=([^;]+);};
 my $val2 = $1;
 
 is( $val1, $val2, 'got the same cookie for each request' );
+unlike( $res->content, qr/ERROR/, 'no error message in response' );

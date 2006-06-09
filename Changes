@@ -1,3 +1,23 @@
+0.29   2006-06-09
+
+- When not running under mod_perl, Apache::Session::Wrapper simply did
+not even try to load CGI::Cookie to generate cookies. Patch by Derek
+Poon.
+
+- When running under mod_perl 1 without Apache::Request, an exception
+was generated when trying to send a cookie.
+
+- Apache::Session::Wrapper now only checks for err_headers_out and
+headers_out on the header_object, since this works for both mod_perl 1
+and 2, as well as Mason's FakeApache object.
+
+- As of version CGI.pm 3.16, CGI::Cookie has a bake() method, but now
+Apache::Session::Wrapper explicitly will not call it, because if
+you're not running under mod_perl, it ends up calling print() to send
+the cookie header when it is called, which may not be what a user of
+this module wants. Patch by Derek Poon.
+
+
 0.28   2006-05-23
 
 - Allow a session_id parameter to the constructor, to force the use of

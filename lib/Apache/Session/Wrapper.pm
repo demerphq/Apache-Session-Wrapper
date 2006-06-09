@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.28';
+$VERSION = '0.29';
 
 use base qw(Class::Container);
 
@@ -37,7 +37,7 @@ sub _find_mp_version
         );
 }
 
-my @HeaderMethods = qw( err_header_out err_headers_out header_out headers_out );
+my @HeaderMethods = qw( err_headers_out headers_out );
 
 my %params =
     ( always_write =>
@@ -521,47 +521,47 @@ sub _set_cookie_fields
 {
     my $self = shift;
 
+    my $cookie_class;
     if ($MOD_PERL)
     {
-        my $cookie_class =
+        $cookie_class =
             $MOD_PERL == 2 ? 'Apache2::Cookie' : 'Apache::Cookie';
-        unless ( $cookie_class->can('new') )
-        {
-            eval "require $cookie_class";
 
-            if ($@)
-            {
-                require CGI::Cookie;
-                $cookie_class = 'CGI::Cookie';
-            }
-        }
+        eval "require $cookie_class"
+            unless $cookie_class->can('new');
+    }
 
-        $self->{cookie_class} = $cookie_class;
+    unless ( $cookie_class && $cookie_class->can('new' ) )
+    {
+        require CGI::Cookie;
+        $cookie_class = 'CGI::Cookie';
+    }
 
-        if ( $self->{cookie_class} eq 'CGI::Cookie' )
-        {
-            $self->{new_cookie_args} = [];
-            $self->{fetch_cookie_args} = [];
-        }
-        else
-        {
-            $self->{new_cookie_args} =
-                [ $MOD_PERL == 2
-                  ? Apache2::RequestUtil->request
-                  : Apache->request
-                ];
+    $self->{cookie_class} = $cookie_class;
 
-            $self->{fetch_cookie_args} =
-                ( $MOD_PERL == 2
-                  ? $self->{new_cookie_args}
-                  : []
-                );
-            $self->{bake_cookie_args} =
-                ( $MOD_PERL == 2
-                  ? $self->{new_cookie_args}
-                  : []
-                );
-        }
+    if ( $self->{cookie_class} eq 'CGI::Cookie' )
+    {
+        $self->{new_cookie_args} = [];
+        $self->{fetch_cookie_args} = [];
+    }
+    else
+    {
+        $self->{new_cookie_args} =
+            [ $MOD_PERL == 2
+              ? Apache2::RequestUtil->request
+              : Apache->request
+            ];
+
+        $self->{fetch_cookie_args} =
+            ( $MOD_PERL == 2
+              ? $self->{new_cookie_args}
+              : []
+            );
+        $self->{bake_cookie_args} =
+            ( $MOD_PERL == 2
+              ? $self->{new_cookie_args}
+              : []
+            );
     }
 }
 
@@ -732,7 +732,10 @@ sub _bake_cookie
               -secure  => $self->{cookie_secure},
             );
 
-    if ( $cookie->can('bake') )
+    # If not running under mod_perl, CGI::Cookie->bake() will call
+    # print() to send a cookie header right now, which may not be what
+    # the user wants.
+    if ( $cookie->can('bake') && ! $cookie->isa('CGI::Cookie') )
     {
         $cookie->bake( @{ $self->{bake_cookie_args} } );
     }
@@ -743,15 +746,7 @@ sub _bake_cookie
         {
             if ( $header_object->can($meth) )
             {
-                if ( Scalar::Util::blessed( $header_object->$meth() )
-                     && $header_object->$meth->can('add') )
-                {
-                    $header_object->$meth->add( 'Set-Cookie' => $cookie );
-                }
-                else
-                {
-                    $header_object->$meth( 'Set-Cookie' => $cookie );
-                }
+                $header_object->$meth->add( 'Set-Cookie' => $cookie );
                 last;
             }
         }
@@ -1054,10 +1049,8 @@ cookie has the effect of updating the expiration time.
 =item * header_object => object
 
 When running outside of mod_perl, you must provide an object to which
-the cookie header can be added.  This object must provide one of the
-following methods: C<err_header_out()>, C<err_headers_out()>,
-C<header_out()>, or C<headers_out()>.  The pluralized versions are
-needed to support mod_perl 2.
+the cookie header can be added.  This object must provide an
+C<err_headers_out()> or C<headers_out()> method.
 
 Under mod_perl 1, this will default to the object returned by C<<
 Apache->request() >>. Under mod_perl 2 we call C<<
@@ -1223,9 +1216,12 @@ When run under mod_perl, this module attempts to first use
 C<Apache::Cookie> for cookie-handling.  Otherwise it uses
 C<CGI::Cookie> as a fallback.
 
-If it ends up using C<CGI::Cookie> then must provide a "header_object"
-parameter.  The module calls C<err_header_out()> or C<header_out()> on
-the provided object, using the former if it's available.
+If it ends up using C<CGI::Cookie> then you must provide a
+"header_object" parameter. This object must have an
+C<err_headers_out()> or C<headers_out()> method. It looks for these
+methods in that order. The method is expected to return an object with
+an API like C<Apache::Table>. It calls C<add()> on the returned method
+to add a "Set-Cookie" header.
 
 =head1 REGISTERING CLASSES
 
