@@ -15,10 +15,9 @@ my $build =
                                'Params::Validate' => 0.70,
                                'Scalar::Util'     => 0,
                              },
-          build_requires => { 'Apache::Test'  => 0,
-                              'Module::Build' => 0,
-                              'File::Spec'    => 0,
+          build_requires => { 'File::Spec'    => 0,
                               'File::Temp'    => 0,
+                              'Module::Build' => 0,
                             },
           create_makefile_pl => 'passthrough',
         );

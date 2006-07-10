@@ -1,6 +1,6 @@
 ---
 name: Apache-Session-Wrapper
-version: 0.29
+version: 0.30
 author:
   - 'Dave Rolsky, <autarch@urth.org>'
 abstract: A simple wrapper around Apache::Session
@@ -14,14 +14,13 @@ requires:
   Params::Validate: 0.7
   Scalar::Util: 0
 build_requires:
-  Apache::Test: 0
   File::Spec: 0
   File::Temp: 0
   Module::Build: 0
 provides:
   Apache::Session::Wrapper:
     file: lib/Apache/Session/Wrapper.pm
-    version: 0.29
+    version: 0.30
 generated_by: Module::Build version 0.2801
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
