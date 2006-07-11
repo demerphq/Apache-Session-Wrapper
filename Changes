@@ -1,4 +1,4 @@
-0.30
+0.30   2006-07-10
 
 - Exactly like 0.29 but does not declare a "build_reqiures" dependency
 on Apache::TestMB. Declaring this dependency causes CPAN.pm (and

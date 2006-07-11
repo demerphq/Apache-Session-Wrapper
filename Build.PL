@@ -19,7 +19,7 @@ my $build =
                               'File::Temp'    => 0,
                               'Module::Build' => 0,
                             },
-          create_makefile_pl => 'passthrough',
+          create_makefile_pl => 'traditional',
         );
 
 $build->create_build_script;
