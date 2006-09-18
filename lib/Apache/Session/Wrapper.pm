@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.31';
+$VERSION = '0.32';
 
 use base qw(Class::Container);
 
@@ -719,7 +719,9 @@ sub _bake_cookie
         $self->{cookie_class}->new
             ( @{ $self->{new_cookie_args} },
               -name    => $self->{cookie_name},
-              -value   => $self->{session_id},
+              # Apache2::Cookie will return undef if we pass undef for
+              # -value.
+              -value   => ( $self->{session_id} || '' ),
               ( defined $expires
                 ? ( -expires => $expires )
                 : ()

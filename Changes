@@ -1,6 +1,23 @@
+0.32   2006-09-18
+
+- Work around a (maybe) bug in Apache2::Cookie. Set -value to undef to
+  in Apach2::Cookie->new causes it to return undef, rather than a
+  cookie with no value. This meant that delete_session() caused an
+  "attempt to call method of undefined value" error. Reported by Derek
+  Price. RT #20992.
+
+
+0.31   2006-07-11
+
+- Exactly 0.30 but now the Build.PL creates a "traditional"
+Makefile.PL. This fixes the problem that the generated "passthrough"
+Makefile.PL was requiring Apache::TestMB, because it's available on my
+system.
+
+
 0.30   2006-07-10
 
-- Exactly like 0.29 but does not declare a "build_reqiures" dependency
+- Exactly like 0.29 but does not declare a "build_requires" dependency
 on Apache::TestMB. Declaring this dependency causes CPAN.pm (and
 probably CPANPLUS) to try and install Apache::Test, which may not
 always install cleanly. If you do have it already installed, then it

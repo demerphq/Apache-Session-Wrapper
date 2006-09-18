@@ -73,6 +73,8 @@ sub handler ($$) : method
                 );
 
         $output .= "SESSION: " . $w->session->{_session_id} . "\n";
+
+        $w->delete_session() if $r->param('delete');
     };
 
     $output .= "ERROR: $@" if $@;

@@ -15,23 +15,23 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 9fc9b3dcd88562dfaa0ad39790100a5315fb9d40 Build.PL
-SHA1 c251238a15a2a97e20daba21f805d0da64635585 Changes
+SHA1 8d2c9cf0add2a90cf84ec4aca044920475cb1582 Changes
 SHA1 f235ba4160673bcb7c9d58c2f09dbc7fc0efadea LICENSE
 SHA1 2469820b4c3f8b03c36f835cac1bf173b21c0da2 MANIFEST
-SHA1 3c8727fc938d366138ce6e10a33beedbcdaaf2cb META.yml
+SHA1 96a58e145ed64453ea2063ab6db3a1ddb4b1ed19 META.yml
 SHA1 e13c6f91a330d6057ded680bfb12c067ebaa1c1e Makefile.PL
 SHA1 b081931e783c93cb74e2943300e87ff0f0833da4 README
-SHA1 6d46fd4fc6788c675ce07736ba0a4427dda03619 lib/Apache/Session/Wrapper.pm
+SHA1 e4d41d3d78749944b584df123edd56f02140f8aa lib/Apache/Session/Wrapper.pm
 SHA1 a9822734d9754c39b2fb7798acce8cfd9b9b61d6 t/01-basic.t
 SHA1 91754573ee0fce9249ef22f571f34d850304de6a t/02-register.t
 SHA1 157c4c93c5a1b2325a244c54aa71f790b7addbe5 t/99-pod.t
-SHA1 8de45ee1314597a798f6de23ee82b6dac93ec353 t/apache/basic.t
+SHA1 ab7d9654785761ced3a3b6811fd7934580a53b9c t/apache/basic.t
 SHA1 c880fdc297c36e5f8ee6a05c1dba800d36134ef7 t/conf/extra.conf.in
-SHA1 a8b942c1a747ffc6a4309efc03f63260d822014b t/response/TestApache/basic.pm
+SHA1 c2655e02dfb348757a22180cc0f449e17c460c6f t/response/TestApache/basic.pm
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.2.2 (GNU/Linux)
 
-iD8DBQFEs7cK3Or3ZzQuifMRAhqaAJ0SGLfpCBs7OumZdhc4TbsSWAhCkwCg1xBB
-gRQu0ngPbfFoK+jVJBCpibY=
-=XVh8
+iD8DBQFFDspG3Or3ZzQuifMRAgPsAJ9zZbEsqscxv8gxpOoh1piKq8fdyQCeP551
+zXd9GmyjTwOCJXE0Pb5KDLg=
+=czYs
 -----END PGP SIGNATURE-----
