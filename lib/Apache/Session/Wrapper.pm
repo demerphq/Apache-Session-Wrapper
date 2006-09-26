@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.32';
+$VERSION = '0.33';
 
 use base qw(Class::Container);
 
@@ -1344,5 +1344,14 @@ Support questions can be sent to me at my email address, shown below.
 =head1 AUTHOR
 
 Dave Rolsky, <autarch@urth.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003-2006 David Rolsky.  All rights reserved.  This
+program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+The full text of the license can be found in the LICENSE file included
+with this module.
 
 =cut

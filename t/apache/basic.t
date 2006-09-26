@@ -2,7 +2,23 @@
 
 use strict;
 
-use Test::More tests => 6;
+use File::Spec;
+use Test::More;
+
+BEGIN
+{
+    my $skip_file = File::Spec->catfile( qw( t conf skip ) );
+
+    if ( -f $skip_file )
+    {
+        plan skip_all => 'You must have the apreq2 module to run these tests with apache2.';
+    }
+    else
+    {
+        plan tests => 6;
+    }
+}
+
 use Apache::Test qw(:withtestmore);
 use Apache::TestUtil;
 use Apache::TestRequest qw(GET);

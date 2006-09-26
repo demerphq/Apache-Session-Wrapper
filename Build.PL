@@ -23,4 +23,4 @@ my $build =
         );
 
 $build->create_build_script;
-$build->add_to_cleanup( 't/session' );
+$build->add_to_cleanup( qw( t/session t/conf/apreq2.conf t/conf/skip ) );
