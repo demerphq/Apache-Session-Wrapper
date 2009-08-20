@@ -350,7 +350,7 @@ sub RegisterClass {
     my $class = shift;
     my %p = validate( @_, { name => { type => SCALAR },
                             required => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
-                            optional => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                            optional => { type => SCALAR | ARRAYREF, default => [ ] },
                           },
                     );
 
@@ -378,7 +378,7 @@ sub RegisterFlexClass {
                                     },
                             name => { type => SCALAR },
                             required => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
-                            optional => { type => SCALAR | ARRAYREF, default => [ [ ] ] },
+                            optional => { type => SCALAR | ARRAYREF, default => [ ]  },
                           },
                     );
 
