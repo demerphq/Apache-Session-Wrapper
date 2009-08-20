@@ -311,10 +311,22 @@ sub _SetValidParams {
     {
         for my $p ( map { @$_ } map { @$_ } values %$hash )
         {
-            $extra{$p} = {
-                optional => 1,
-                type => SCALAR
-            };
+            my $h;
+            if ( ref $p ) {
+                # we assume its a hash of names/parameter specifications
+                $h = $p;
+            } elsif (!$params{$p}) {
+                # its a new parameter defined by a scalar, default to SCALAR value
+                $h = { $p => { optional => 1, type => SCALAR } };
+            } else {
+                # its a scalar option we already know.
+                next;
+            }
+            # now expand the options
+            foreach my $name (keys %$h) {
+                next if $params{$name};
+                $extra{$p} = $h->{$name};
+            }
         }
     }
 
