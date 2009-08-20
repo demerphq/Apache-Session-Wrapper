@@ -311,7 +311,10 @@ sub _SetValidParams {
     {
         for my $p ( map { @$_ } map { @$_ } values %$hash )
         {
-            $extra{$p} = { optional => 1 };
+            $extra{$p} = {
+                optional => 1,
+                type => SCALAR
+            };
         }
     }
 
