@@ -717,7 +717,7 @@ sub _handle_tie_error
     else
     {
         my $error =
-            $@ ? $@ : "Tying to Apache::Session::$self->{session_class_piece} failed but did not throw an exception";
+            $err ? $err : "Tying to Apache::Session::$self->{session_class_piece} failed but did not throw an exception";
         die $error;
     }
 }
