@@ -1,3 +1,10 @@
+0.33_01   2006-10-15
+
+- Fix user defined options handling and fix default of optional options.
+  See http://rt.cpan.org/Public/Bug/Display.html?id=49561.
+- Trap possibly clobbered $@.
+- New maintainer.
+
 0.33   2006-09-26
 
 - When setting up tests with Apache::Test, if the user has apache2 we
