@@ -1,4 +1,8 @@
-0.33_01   2006-10-15
+0.34    2010-05-20
+
+- Rerelease 0.33_01 as 0.34
+
+0.33_01   2009-12-31
 
 - Fix user defined options handling and fix default of optional options.
   See http://rt.cpan.org/Public/Bug/Display.html?id=49561.

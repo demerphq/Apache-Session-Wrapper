@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION);
 
-$VERSION = '0.33_01';
+$VERSION = '0.34';
 $VERSION = eval $VERSION;
 
 use base qw(Class::Container);
